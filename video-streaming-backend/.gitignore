@@ -4,4 +4,3 @@ uploads
 video
 video.mp4
 .env
-.env*.local

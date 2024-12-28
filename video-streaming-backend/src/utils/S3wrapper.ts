@@ -67,4 +67,68 @@ export class S3wrapper {
       throw error;
     }
   }
+
+  /**
+   * Fetches a list of files from the specified bucket or folder within the bucket.
+   * @param bucketName The name of the S3 bucket.
+   * @param prefix The folder prefix (optional).
+   * @returns A list of file objects with their name, size, and last modified date.
+   */
+  public async getFiles(
+    bucketName: string,
+    prefix: string = ""
+  ): Promise<{ name: string; size: number; lastModified: Date }[]> {
+    try {
+      const data = await this._s3Client
+        .listObjectsV2({
+          Bucket: bucketName,
+          Prefix: prefix, // Specify the folder or root
+        })
+        .promise();
+
+      if (!data.Contents) {
+        return [];
+      }
+
+      // Map the S3 object metadata to a simplified structure
+      return data.Contents.map((item) => ({
+        name: item.Key || "", // Key (file path)
+        size: item.Size || 0, // File size in bytes
+        lastModified: item.LastModified || new Date(), // Last modified date
+      }));
+    } catch (error) {
+      console.error("Error fetching files from S3: ", error);
+      throw error;
+    }
+  }
+
+  public async getFolders(
+    bucketName: string,
+    prefix: string = ""
+  ): Promise<string[]> {
+    try {
+      const data = await this._s3Client
+        .listObjectsV2({
+          Bucket: bucketName,
+          Prefix: prefix, // Optional: Specify folder prefix
+          Delimiter: "/", // Ensures only top-level folders are returned
+        })
+        .promise();
+
+      // Extract folder names from CommonPrefixes
+      const folders =
+        data.CommonPrefixes?.map(
+          (item) => item.Prefix?.replace(prefix, "").replace("/", "") || ""
+        ) || [];
+
+      return folders;
+    } catch (error) {
+      console.error("Error fetching folders from S3: ", error);
+      throw error;
+    }
+  }
+
+  public getSignedUrl(params: any): string {
+    return this._s3Client.getSignedUrl("getObject", params);
+  }
 }

@@ -24,7 +24,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ isLogin, onToggle }) => {
       try {
         const result = await handleSignUp(formData);
 
-        console.log({ result });
         if (result?.nextStep.signUpStep === "CONFIRM_SIGN_UP") {
           router.replace(`/auth/confirm?email=${email}`);
         }

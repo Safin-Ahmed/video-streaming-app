@@ -22,7 +22,7 @@ const VideoDetails = () => {
         <h1 className="text-4xl font-bold mb-4">{video.title}</h1>
         <p className="mb-8">{video.description}</p>
         <div className="aspect-w-16 aspect-h-9 mb-8">
-          <DashPlayer url={video.videoUrl} />
+          <DashPlayer manifestUrl={video.videoUrl} videoName={String(id)} />
         </div>
       </div>
     </Layout>

@@ -3,7 +3,6 @@ import { Request, Response } from "express";
 import uploadService from "../../service/upload";
 
 const uploadController = async (req: Request, res: Response) => {
-  console.log({ files: req });
   try {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).send("No files were uploaded");

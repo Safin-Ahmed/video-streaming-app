@@ -6,10 +6,11 @@ import React, { useEffect, useRef } from "react";
 import { encrypt } from "@/utils/encryption";
 
 interface IDashPlayer {
-  url: string;
+  manifestUrl: string;
+  videoName: string;
 }
 
-const DashPlayer: React.FC<IDashPlayer> = ({ url }) => {
+const DashPlayer: React.FC<IDashPlayer> = ({ manifestUrl, videoName }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<dashjs.MediaPlayerClass | null>(null);
 
@@ -20,6 +21,11 @@ const DashPlayer: React.FC<IDashPlayer> = ({ url }) => {
       const encryptedToken = encrypt(String(token));
 
       const player = dashjs.MediaPlayer().create();
+      player.updateSettings({
+        debug: {
+          logLevel: 5, // Enable detailed logs
+        },
+      });
 
       playerRef.current = player;
 
@@ -28,19 +34,29 @@ const DashPlayer: React.FC<IDashPlayer> = ({ url }) => {
           "RequestModifier",
           () => {
             return {
-              modifyRequestHeader: (xhr: XMLHttpRequest) => {
-                xhr.setRequestHeader(
-                  "Authorization",
-                  `Bearer ${encryptedToken}`
+              async modifyRequest(request: any) {
+                const url = new URL(request.url);
+                const segmentName = url.pathname.split("/").pop();
+                const response = await fetch(
+                  `http://localhost:4000/stream/${videoName}/${segmentName}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${encryptedToken}`,
+                    },
+                  }
                 );
-                return xhr;
+                const data = await response.json();
+
+                request.url = data.signedUrl;
+
+                return request;
               },
             };
           },
           true
         );
 
-        player.initialize(videoRef.current, url, true);
+        player.initialize(videoRef.current, manifestUrl, true);
       }
     };
 
@@ -51,7 +67,7 @@ const DashPlayer: React.FC<IDashPlayer> = ({ url }) => {
         playerRef.current.reset();
       }
     };
-  }, [url]);
+  }, [manifestUrl]);
 
   return (
     <video

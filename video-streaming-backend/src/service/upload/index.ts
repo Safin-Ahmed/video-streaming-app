@@ -14,36 +14,48 @@ const resolutions: VideoQuality[] = [
 ];
 
 const s3wrapper = new S3wrapper();
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
 
 const injectBaseUrlToManifest = async (
   outputDir: string,
   fileName: string,
   baseURL: string
 ): Promise<void> => {
-  // After processing is complete, read the MPD file
-  const mpdFile = path.join(outputDir, `${fileName.split(".")[0]}.mpd`);
+  try {
+    const mpdFile = path.join(outputDir, `${fileName.split(".")[0]}.mpd`);
+    const mpdContent = await fs.readFile(mpdFile, "utf-8");
 
-  let mpdContent = await fs.readFile(mpdFile, "utf-8");
+    // Check if BaseURL already exists
+    if (mpdContent.includes("<BaseURL>")) {
+      console.log("BaseURL already exists in MPD file. Skipping injection.");
+      return;
+    }
 
-  // Add <BaseURL> tag to the MPD file
-  const baseURLTag = `<BaseURL>${baseURL}</BaseURL>`;
+    // Find the position of the opening <MPD> tag
+    const mpdOpenTagIndex = mpdContent.indexOf("<MPD");
+    if (mpdOpenTagIndex === -1) {
+      throw new Error("Invalid MPD file: Missing <MPD> tag.");
+    }
 
-  const startIndex = mpdContent.indexOf('lang="und">');
+    // Find the closing `>` of the <MPD> tag (supports attributes in the <MPD> tag)
+    const mpdCloseTagIndex = mpdContent.indexOf(">", mpdOpenTagIndex);
+    if (mpdCloseTagIndex === -1) {
+      throw new Error("Invalid MPD file: Malformed <MPD> tag.");
+    }
 
-  if (startIndex !== -1) {
-    const insertionPoint = startIndex + 'lang="und"'.length;
+    // Inject <BaseURL> right after the <MPD> opening tag
+    const updatedContent =
+      mpdContent.slice(0, mpdCloseTagIndex + 1) +
+      `\n\t<BaseURL>${baseURL}</BaseURL>\n` +
+      mpdContent.slice(mpdCloseTagIndex + 1);
 
-    // Insert the BaseURL tag
-    mpdContent =
-      mpdContent.slice(0, insertionPoint + 1) +
-      "\n\t" +
-      baseURLTag +
-      mpdContent.slice(insertionPoint + 1);
-  } else {
-    throw new Error("Base URL could not be added");
+    // Write back the updated content
+    await fs.writeFile(mpdFile, updatedContent, "utf-8");
+    console.log("BaseURL successfully injected.");
+  } catch (error) {
+    console.error("Error injecting BaseURL:", error);
+    throw error;
   }
-
-  await fs.writeFile(mpdFile, mpdContent, "utf-8");
 };
 
 const processVideo = async (

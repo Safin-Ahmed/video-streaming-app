@@ -4,9 +4,6 @@ import { defaultStorage } from "aws-amplify/utils";
 
 cognitoUserPoolsTokenProvider.setKeyValueStorage(defaultStorage);
 
-console.log(process.env.NEXT_PUBLIC_USER_POOL_ID);
-console.log(process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID);
-
 export const authConfig: ResourcesConfig["Auth"] = {
   Cognito: {
     userPoolId: String(process.env.NEXT_PUBLIC_USER_POOL_ID),

@@ -13,16 +13,11 @@ const authenticate = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers["authorization"];
-  console.log({ authHeader });
   if (!authHeader) {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  console.log("Request Object in auth middleware", req.files);
-
   const token = String(authHeader).split(" ")[1];
-
-  console.log({ token });
 
   if (!token) {
     return res.status(401).json({ message: "Invalid token format" });
@@ -31,9 +26,6 @@ const authenticate = async (
   try {
     // Decrypt the token
     const decryptedToken = decrypt(token);
-
-    console.log({ decryptedToken });
-
     // Verify the JWT Token
     const getKey = getJWKSKey();
 
